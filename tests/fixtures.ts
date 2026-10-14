@@ -1,0 +1,2 @@
+export const guild='123456789012345678';
+export const config={name:'Arena First Whistle',description:'Agent Builder 配置、预览及 Signal；预计 15 分钟。\n本轮不需要充值或下注。奖励依据有效反馈审核。',product_url:'https://example.com/arena',form_url:'https://forms.gle/Abc123',starts_at:'2026-01-01T00:00:00+08:00',closes_at:'2099-01-01T00:00:00+08:00',feedback_at:'2099-02-01T00:00:00+08:00',timezone:'Asia/Shanghai',capacity:20,channel_id:'123456789012345679',help_channel_id:'123456789012345680',role_id:null};

@@ -1,0 +1,14 @@
+services:
+  bot:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_PATH: /app/data/bot.sqlite
+    volumes:
+      - invite-data:/app/data
+      - ./backups:/app/backups
+    init: true
+    stop_grace_period: 30s
+volumes:
+  invite-data:

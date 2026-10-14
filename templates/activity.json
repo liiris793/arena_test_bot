@@ -1,0 +1,16 @@
+{
+  "name": "Arena First Whistle",
+  "description": "Experience: Agent Builder configuration, preview, and Signal\nEstimated time: 15 minutes\n\nNo deposit or betting is required. Rewards depend on valid feedback review; claiming an invite does not guarantee a reward.",
+  "guide": "1. Click Get Invite Code.\n2. Open the Product link and complete the beta experience.\n3. Submit your feedback before the deadline.",
+  "product_url": "https://privy-spoon-predict-web.vercel.app",
+  "form_url": "https://forms.gle/ReplaceWithYourForm",
+  "starts_at": "2026-10-10T10:00:00+08:00",
+  "closes_at": "2026-10-17T23:59:00+08:00",
+  "feedback_at": "2026-10-20T23:59:00+08:00",
+  "timezone": "UTC",
+  "capacity": 20,
+  "channel_id": "1559123161855959040",
+  "help_channel_id": "1559123352746983424",
+  "role_id": null,
+  "paused": false
+}
