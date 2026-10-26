@@ -1,5 +1,5 @@
-import { SlashCommandBuilder, ChannelType } from 'discord.js';
-const command=new SlashCommandBuilder().setName('invite-admin').setDescription('Manage invite activities (admins and operators only)').setDMPermission(false);
+import { PermissionFlagsBits, SlashCommandBuilder, ChannelType } from 'discord.js';
+const command=new SlashCommandBuilder().setName('invite-admin').setDescription('Manage invite activities (admins and operators only)').setDMPermission(false).setDefaultMemberPermissions(PermissionFlagsBits.Administrator);
 command.addSubcommand(s=>s.setName('create').setDescription('Create an activity from a JSON config').addAttachmentOption(o=>o.setName('config').setDescription('UTF-8 JSON configuration file').setRequired(true)));
 command.addSubcommand(s=>s.setName('list').setDescription('List all activities in this server'));
 command.addSubcommand(s=>s.setName('backup').setDescription('Create a private SQLite database backup'));
