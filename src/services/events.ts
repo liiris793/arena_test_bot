@@ -42,6 +42,16 @@ export class Events {
       return this.get(key,guild);
     });
   }
+  delete(id: string, guild: string, actor: string) {
+    immediate(this.db, () => {
+      const e = this.get(id, guild);
+      this.audit(id, actor, 'delete', { name: e.name });
+      this.db.prepare('DELETE FROM panels WHERE event_id=?').run(id);
+      this.db.prepare('DELETE FROM codes WHERE event_id=?').run(id);
+      this.db.prepare('DELETE FROM alerts WHERE event_id=?').run(id);
+      this.db.prepare('DELETE FROM events WHERE id=? AND guild_id=?').run(id, guild);
+    });
+  }
   stats(id: string) {
     const r = this.db.prepare("SELECT count(*) total, coalesce(sum(status='unused'),0) unused, coalesce(sum(status='assigned'),0) assigned, coalesce(sum(status='disabled'),0) disabled, coalesce(sum(role_status IN ('pending','failed')),0) role_pending FROM codes WHERE event_id=?").get(id) as Record<string,number>;
     return r;

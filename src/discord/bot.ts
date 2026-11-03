@@ -68,6 +68,18 @@ export function createBot(events:Events,guildId:string,adminRoles:string[]) {
       await i.editReply(`Activity saved: ${e.name}\nID: ${e.id}\n${failed?`${failed} panel(s) failed to update; the background job will retry. The old feedback link remains available until sync succeeds.`:'Existing panels synchronized.'}`);return;
     }
     if(!e) throw new UserError('Please provide an activity ID.');
+    if(sub==='delete') {
+      if(!i.options.getBoolean('confirm',true)) throw new UserError('Deletion was not confirmed. Set confirm to true to permanently delete this activity.');
+      const name=e.name;
+      events.delete(e.id,guildId,i.user.id);
+      await i.editReply(`Activity deleted: ${name}. Existing Discord panel messages were not removed.`);
+      return;
+    }
+    if(sub==='count') {
+      const s=events.stats(e.id);
+      await i.editReply(`Activity: ${e.name}\nClaims: ${s.assigned}\nAvailable codes: ${s.unused}\nStatus: ${e.ended?'Ended':e.paused?'Paused':'Active'}`);
+      return;
+    }
     switch(sub) {
       case 'import': {const result=events.import(e.id,i.user.id,await readAttachment(i.options.getAttachment('file',true),'.txt')); if(result.added) events.db.prepare('DELETE FROM alerts WHERE key=?').run(`stock:${e.id}`); await i.editReply(`Added ${result.added}; duplicates ${result.duplicate}; invalid ${result.invalid}; remaining inventory ${result.remaining}.\nImporting codes does not verify them in Arena.`);break;}
       case 'publish': {
