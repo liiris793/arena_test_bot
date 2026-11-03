@@ -12,7 +12,7 @@ export const eventSchema = z.object({
   timezone: z.string().default('UTC').refine(s => { try { new Intl.DateTimeFormat('en', { timeZone: s }); return true; } catch { return false; } }, 'Invalid IANA timezone'),
   capacity: z.number().int().min(0).max(1000000), role_id: snowflake.nullable().default(null),
   channel_id: snowflake, help_channel_id: snowflake,
-  paused: z.boolean().default(false)
+  paused: z.boolean().default(false), ended: z.boolean().default(false)
 }).strict().refine(c => c.starts_at < c.closes_at && c.feedback_at >= c.starts_at, 'Claim deadline must be after start; feedback deadline must not be before start');
 export type Config = z.infer<typeof eventSchema>;
 export type Event = Config & { id: string; guild_id: string; revision: number };
@@ -65,6 +65,7 @@ export class Events {
   claim(id: string, guild: string, user: string, name: string, now=new Date()): Claim {
     const result = immediate(this.db, () => {
       const e=this.get(id,guild), old=this.find(id,user); if(old) return old;
+      if(e.ended) throw new UserError('This activity has ended.');
       if(e.paused) throw new UserError('Claims are paused for this activity.');
       if(now.toISOString()<e.starts_at) throw new UserError(`Claims have not opened yet: ${formatTime(e.starts_at)}`);
       if(now.toISOString()>=e.closes_at) throw new UserError('The claim deadline has passed.');

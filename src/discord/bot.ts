@@ -1,4 +1,4 @@
-import { AttachmentBuilder, ChannelType, Client, Events as DiscordEvents, GatewayIntentBits, MessageFlags, PermissionFlagsBits, type Attachment, type ChatInputCommandInteraction } from 'discord.js';
+import { AttachmentBuilder, ChannelType, Client, EmbedBuilder, Events as DiscordEvents, GatewayIntentBits, MessageFlags, PermissionFlagsBits, type Attachment, type ChatInputCommandInteraction } from 'discord.js';
 import { randomUUID } from 'node:crypto';
 import { unlink } from 'node:fs/promises';
 import { join } from 'node:path';
@@ -47,6 +47,16 @@ export function createBot(events:Events,guildId:string,adminRoles:string[]) {
       finally { try { await unlink(path); } catch { /* cleanup is best effort */ } }
       return;
     }
+    if(sub==='announce') {
+      const text=await readAttachment(i.options.getAttachment('file',true),'.md');
+      const channel=await i.guild!.channels.fetch(i.options.getChannel('channel',true).id);
+      if(!channel || ![ChannelType.GuildText,ChannelType.GuildAnnouncement].includes(channel.type) || !channel.isTextBased()) throw new UserError('Choose a text or announcement channel in this server.');
+      const lines=text.split(/\r?\n/), title=lines.find(l=>/^#\s+/.test(l))?.replace(/^#\s+/,'').trim()||'Announcement';
+      const description=lines.filter(l=>!/^#\s+/.test(l)).join('\n').trim();
+      if(description.length>4096) throw new UserError('The Markdown announcement is too long for a Discord embed (maximum 4096 characters).');
+      const message=await channel.send({embeds:[new EmbedBuilder().setTitle(title.slice(0,256)).setDescription(description||' ').setColor(0x000000)],allowedMentions:{parse:[]}});
+      await i.editReply(`Announcement published: ${message.url}`); return;
+    }
     if(sub==='create'||sub==='edit') {
       let input:unknown;try {input=JSON.parse(await readAttachment(i.options.getAttachment('config',true),'.json'));} catch(error) {if(error instanceof SyntaxError) throw new UserError('Invalid JSON.');throw error;}
       if(!input || typeof input!=='object' || Array.isArray(input)) throw new UserError('The configuration must be a JSON object.');
@@ -69,6 +79,7 @@ export function createBot(events:Events,guildId:string,adminRoles:string[]) {
       }
       case 'refresh': {events.db.prepare('UPDATE panels SET revision=0 WHERE event_id=?').run(e.id);const failures=await jobs.sync(e);await i.editReply(`Refresh complete. Failed panels: ${failures}; failed items will be retried.`);break;}
       case 'pause':case 'resume': {e=events.save(guildId,i.user.id,{paused:sub==='pause'},e.id);events.audit(e.id,i.user.id,sub);const failures=await jobs.sync(e);await i.editReply(`${sub==='pause'?'Claims paused':'Claims resumed'}. Panel update failures: ${failures}.`);break;}
+      case 'end': {e=events.save(guildId,i.user.id,{ended:true,paused:true},e.id);events.audit(e.id,i.user.id,'end');const failures=await jobs.sync(e);await i.editReply(`Activity ended. Panel update failures: ${failures}.`);break;}
       case 'stats': {const s=events.stats(e.id);const pending=events.db.prepare('SELECT count(*) n FROM alerts WHERE event_id=? AND delivered_at IS NULL').get(e.id)!.n;await i.editReply(`Total codes ${s.total} · unused ${s.unused} · disabled ${s.disabled}\nClaimed ${s.assigned} · remaining capacity ${e.capacity-s.assigned} · roles pending ${s.role_pending}\nUndelivered admin alerts ${pending}`);break;}
       case 'lookup':case 'retry-role': {const user=i.options.getString('user-id',true);if(!/^\d{17,20}$/.test(user)) throw new UserError('Invalid Discord user ID.');const c=events.find(e.id,user);if(!c) throw new UserError('This user has not claimed an invite for this activity.');if(sub==='retry-role'){await jobs.role(e,c,true);const current=events.find(e.id,user)!;await i.editReply(`Tester role status: ${current.role_status}. The invite code is unchanged.`);}else await i.editReply(receipt(e,c));break;}
       case 'export': {await i.editReply({files:[new AttachmentBuilder(Buffer.from(events.export(e.id)),{name:`participants-${e.id}.csv`})]});events.audit(e.id,i.user.id,'export');break;}
@@ -93,7 +104,7 @@ export function createBot(events:Events,guildId:string,adminRoles:string[]) {
         const e=events.get(id,guildId);
         stage = 'claim';
         const claim=action==='claim'?events.claim(id,guildId,i.user.id,i.member.displayName):events.find(id,i.user.id);
-        if(!claim) throw new UserError('You have not claimed an invite for this activity. Click “Get Invite Code” first.');
+        if(!claim) throw new UserError(e.ended ? 'This activity has ended.' : 'You have not claimed an invite for this activity. Click “Get Invite Code” first.');
         await i.editReply(receipt(e,claim));
         // The claim is saved before presentation; delivery or role failures never reclaim it.
         await serial(()=>jobs.role(e,claim,action==='claim'));
