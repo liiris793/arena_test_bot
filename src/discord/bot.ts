@@ -40,7 +40,14 @@ export function createBot(events:Events,guildId:string,adminRoles:string[]) {
     if(!canManage(member,adminRoles)) throw new UserError('Only server administrators or configured operator roles can use this command.');
     const sub=i.options.getSubcommand(), id=i.options.getString('event');
     let e=id?events.get(id,guildId):undefined;
-    if(sub==='list') {const list=events.list(guildId); await i.editReply({files:[new AttachmentBuilder(Buffer.from(JSON.stringify(list.map(({id,name,paused,capacity})=>({id,name,paused,capacity})),null,2)),{name:'events.json'})]});return;}
+    if(sub==='list') {
+      const list=events.list(guildId).map(({id,name,paused,ended,capacity})=>{
+        const s=events.stats(id);
+        return {id,name,status:ended?'ended':paused?'paused':'active',capacity,claims:s.assigned,available_codes:s.unused};
+      });
+      await i.editReply({files:[new AttachmentBuilder(Buffer.from(JSON.stringify(list,null,2)),{name:'events.json'})]});
+      return;
+    }
     if(sub==='backup') {
       const path=join(process.cwd(),`data/backup-${new Date().toISOString().replaceAll(':','-')}-${randomUUID()}.sqlite`);
       try { events.db.prepare('VACUUM INTO ?').run(path); await i.editReply({content:'Private database backup created.',files:[new AttachmentBuilder(path,{name:'invite-bot-backup.sqlite'})]}); }
