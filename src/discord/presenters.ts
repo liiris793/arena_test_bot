@@ -4,7 +4,8 @@ export function panel(e:Event) {
   const buttons=[new ButtonBuilder().setCustomId(`invite:mine:${e.id}`).setLabel('My Invite Code').setStyle(ButtonStyle.Secondary)];
   if(!e.ended) {
     buttons.unshift(new ButtonBuilder().setCustomId(`invite:claim:${e.id}`).setLabel('Get Invite Code').setStyle(ButtonStyle.Secondary));
-    if(e.form_url) buttons.push(new ButtonBuilder().setLabel('Submit Feedback').setURL(e.form_url).setStyle(ButtonStyle.Secondary));
+    // Discord requires URL buttons to use the Link style; Link buttons render in Discord's neutral style.
+    if(e.form_url) buttons.push(new ButtonBuilder().setLabel('Submit Feedback').setURL(e.form_url).setStyle(ButtonStyle.Link));
   }
   const fields = [
     ...(e.ended ? [{name:'STATUS',value:'**ENDED**'}] : []),
