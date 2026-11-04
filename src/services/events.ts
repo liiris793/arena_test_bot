@@ -8,12 +8,12 @@ const snowflake = z.string().regex(/^\d{17,20}$/);
 export const eventSchema = z.object({
   name: z.string().trim().min(1).max(200), description: z.string().trim().min(1).max(3000), guide: z.string().trim().max(1000).default(''),
   product_url: https, form_url: formUrl.nullable().default(null),
-  starts_at: time, closes_at: time, feedback_at: time,
+  starts_at: time, closes_at: time, feedback_at: time.nullable().default(null),
   timezone: z.string().default('UTC').refine(s => { try { new Intl.DateTimeFormat('en', { timeZone: s }); return true; } catch { return false; } }, 'Invalid IANA timezone'),
   capacity: z.number().int().min(0).max(1000000), role_id: snowflake.nullable().default(null),
   channel_id: snowflake, help_channel_id: snowflake,
   paused: z.boolean().default(false), ended: z.boolean().default(false)
-}).strict().refine(c => c.starts_at < c.closes_at && c.feedback_at >= c.starts_at, 'Claim deadline must be after start; feedback deadline must not be before start');
+}).strict().refine(c => c.starts_at < c.closes_at && (!c.feedback_at || c.feedback_at >= c.starts_at), 'Claim deadline must be after start; feedback deadline must not be before start');
 export type Config = z.infer<typeof eventSchema>;
 export type Event = Config & { id: string; guild_id: string; revision: number };
 export type Claim = { id: number; event_id: string; code: string; user_id: string; display_name: string; assigned_at: string; role_status: string };
